@@ -1,0 +1,22 @@
+{
+  "name": "lisacroce-mcp-edge",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "test": "node --test test/*.test.mjs",
+    "check": "npm test && wrangler deploy --dry-run --outdir dist",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:query:local": "wrangler d1 execute DB --local --command \"SELECT s.slug AS site, p.slug AS page, COUNT(ps.id) AS sections FROM sites s JOIN pages p ON p.site_id = s.id LEFT JOIN page_sections ps ON ps.page_id = p.id GROUP BY s.slug, p.slug\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
+    "agents": "0.20.1",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "wrangler": "4.123.0"
+  }
+}

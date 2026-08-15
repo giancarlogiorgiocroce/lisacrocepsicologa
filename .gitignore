@@ -1,0 +1,12 @@
+MCP_AI_CMS_TEMPLATE_MANUAL.md
+
+# Dipendenze e stato locale Cloudflare
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.secrets/
+
+# Output locali
+coverage/
+dist/

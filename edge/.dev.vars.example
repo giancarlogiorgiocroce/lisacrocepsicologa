@@ -1,0 +1,3 @@
+# Copiare come .dev.vars e usare un valore casuale lungo.
+# Il file .dev.vars reale è ignorato da Git.
+AI_API_TOKEN=replace-with-a-long-random-token
