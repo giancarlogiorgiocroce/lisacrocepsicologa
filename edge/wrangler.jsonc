@@ -14,10 +14,20 @@
       "fallthrough": true
     }
   ],
-  "compatibility_date": "2026-08-15",
+  "compatibility_date": "2026-08-16",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
   "preview_urls": true,
+  "routes": [
+    {
+      "pattern": "lisacroce.it/*",
+      "zone_name": "lisacroce.it"
+    },
+    {
+      "pattern": "www.lisacroce.it/*",
+      "zone_name": "lisacroce.it"
+    }
+  ],
   "observability": {
     "enabled": true,
     "logs": {

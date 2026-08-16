@@ -207,20 +207,71 @@ function imageResponse(request, asset) {
   });
 }
 
+function isProductionHost(hostname) {
+  return hostname === "lisacroce.it";
+}
+
+function canonicalRedirect(url) {
+  const target = new URL(url);
+  target.protocol = "https:";
+  target.hostname = "lisacroce.it";
+  target.port = "";
+  return Response.redirect(target, 308);
+}
+
+async function pageResponse(request, env, { indexable }) {
+  const page = await getPage(env.DB, "lisa", "home");
+  if (!page) return jsonError(404, "Pagina non disponibile");
+
+  const html = renderPageDocument(page, siteTemplate);
+  const headers = new Headers({
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "no-store"
+  });
+  if (!indexable) headers.set("X-Robots-Tag", "noindex, nofollow");
+
+  return new Response(request.method === "HEAD" ? null : html, { headers });
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const productionHost = isProductionHost(url.hostname);
 
     try {
+      if (url.hostname === "www.lisacroce.it") {
+        return canonicalRedirect(url);
+      }
+
       if (url.pathname === "/health") {
         return Response.json({
           ok: true,
           service: "lisacroce-ai-cms",
           version: APP_VERSION,
-          environment: "staging",
+          environment: productionHost ? "production" : "staging",
           transport: "streamable-http",
           dnsRequired: false
         });
+      }
+
+      if (productionHost && url.pathname === "/index.html") {
+        return Response.redirect(new URL("/", url), 301);
+      }
+
+      if (productionHost && url.pathname === "/robots.txt") {
+        return new Response("User-agent: *\nAllow: /\nSitemap: https://lisacroce.it/sitemap.xml\n", {
+          headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" }
+        });
+      }
+
+      if (productionHost && url.pathname === "/sitemap.xml") {
+        return new Response('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://lisacroce.it/</loc></url></urlset>\n', {
+          headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" }
+        });
+      }
+
+      if (productionHost && url.pathname === "/" && (request.method === "GET" || request.method === "HEAD")) {
+        return pageResponse(request, env, { indexable: true });
       }
 
       if (url.pathname === "/preview/") {
@@ -228,16 +279,7 @@ export default {
       }
 
       if (url.pathname === "/preview" && (request.method === "GET" || request.method === "HEAD")) {
-        const page = await getPage(env.DB, "lisa", "home");
-        if (!page) return jsonError(404, "Preview non disponibile");
-        const html = renderPageDocument(page, siteTemplate);
-        return new Response(request.method === "HEAD" ? null : html, {
-          headers: {
-            "Content-Type": "text/html; charset=utf-8",
-            "Cache-Control": "no-store",
-            "X-Robots-Tag": "noindex, nofollow"
-          }
-        });
+        return pageResponse(request, env, { indexable: false });
       }
 
       const imageAsset = IMAGE_ASSETS.get(url.pathname);

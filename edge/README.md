@@ -1,6 +1,6 @@
 # Lisa Croce AI CMS — Worker MCP
 
-Base locale e staging Cloudflare del CMS conversazionale. Non richiede DNS né dominio.
+Base locale e deployment Cloudflare del CMS conversazionale.
 
 ## Avvio
 
@@ -17,7 +17,7 @@ Endpoint locali:
 
 Il client deve inviare `Authorization: Bearer <TOKEN>`. Il secret tecnico `AI_API_TOKEN` è limitato alla lettura; i token editor sono salvati in `auth_tokens` soltanto come hash SHA-256 e richiedono gli scope `content:read content:write`.
 
-La versione applicativa è `0.2.0`, condivisa dall'handshake MCP e dalla risposta `/health`. Le dipendenze dirette sono fissate a versioni esatte nel manifest e nel lockfile per ottenere build riproducibili.
+La versione applicativa è `0.2.1`, condivisa dall'handshake MCP e dalla risposta `/health`. Le dipendenze dirette sono fissate a versioni esatte nel manifest e nel lockfile per ottenere build riproducibili.
 
 ## Staging Cloudflare
 
@@ -28,6 +28,15 @@ La versione applicativa è `0.2.0`, condivisa dall'handshake MCP e dalla rispost
 - R2: `lisacroce-mcp-staging-media-bucket`
 
 Lo staging è stato pubblicato e verificato il 15 agosto 2026 con Worker `0.2.0` (versione Cloudflare `14943c9f-f1bf-431a-831a-28d0d5f5aa42`). La preview restituisce le sei sezioni da D1, le immagini statiche rispondono `200`, l'accesso MCP anonimo restituisce `401` e i test remoti di aggiornamento, protezione stale e rollback sono riusciti.
+
+## Produzione
+
+- sito canonico: `https://lisacroce.it/`
+- preview dinamica non indicizzabile: `https://lisacroce.it/preview`
+- health: `https://lisacroce.it/health`
+- MCP Streamable HTTP: `https://lisacroce.it/mcp`
+
+La produzione è stata pubblicata e verificata il 16 agosto 2026 con Worker `0.2.1` (versione Cloudflare `a589f0e4-caca-42ff-81b4-185fa7c2a9b2`). La homepage viene renderizzata da D1, `www` reindirizza al dominio canonico, `/preview` invia `X-Robots-Tag: noindex, nofollow`, gli asset rispondono `200` e l'accesso MCP anonimo restituisce `401`.
 
 `AI_API_TOKEN` è configurato come secret Cloudflare. I token editor usati negli smoke test sono stati generati solo in memoria, memorizzati in D1 come hash e rimossi al termine. Prima di configurare un client stabile, creare un token editor dedicato e custodirne il valore nel gestore segreti scelto.
 
@@ -51,4 +60,4 @@ Da `edge/`:
 
 ## DNS
 
-La configurazione abilita `workers.dev` e non dichiara route o custom domain. Le route `lisacroce.it` verranno aggiunte solo dopo l'attivazione del dominio su Cloudflare DNS.
+La zona `lisacroce.it` usa i nameserver Cloudflare. Due Worker Routes intercettano il dominio principale e `www.lisacroce.it`; `www` viene reindirizzato in modo permanente verso il dominio canonico. `workers.dev` resta disponibile per verifiche e rollback.

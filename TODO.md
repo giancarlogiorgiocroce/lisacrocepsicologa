@@ -31,5 +31,5 @@
 - [x] Pubblicare una prima versione su `*.workers.dev` per gli smoke MCP.
 - [x] Creare e collegare le risorse Cloudflare remote D1/R2.
 - [x] Applicare le migrazioni remote, configurare `AI_API_TOKEN` come secret e verificare gli endpoint protetti.
-- [ ] Acquistare `lisacroce.it` e spostarne i nameserver su Cloudflare.
-- [ ] Configurare route/custom domain soltanto dopo l'attivazione DNS.
+- [x] Acquistare `lisacroce.it` e spostarne i nameserver su Cloudflare.
+- [x] Configurare le Worker Routes per `lisacroce.it` e `www.lisacroce.it` dopo l'attivazione DNS.
