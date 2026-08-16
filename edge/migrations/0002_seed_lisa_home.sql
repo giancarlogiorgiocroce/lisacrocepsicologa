@@ -3,7 +3,7 @@ VALUES ('lisa', 'Lisa Croce · Psicologa clinica', 'active')
 ON CONFLICT(slug) DO UPDATE SET name = excluded.name, status = excluded.status, updated_at = CURRENT_TIMESTAMP;
 
 INSERT INTO pages (site_id, slug, title, status)
-SELECT id, 'home', 'Lisa Croce | Psicologa clinica', 'published'
+SELECT id, 'home', 'Lisa Croce | Psicologa clinica a Bolzano e online', 'published'
 FROM sites
 WHERE slug = 'lisa'
 ON CONFLICT(site_id, slug) DO UPDATE SET title = excluded.title, status = excluded.status, updated_at = CURRENT_TIMESTAMP;

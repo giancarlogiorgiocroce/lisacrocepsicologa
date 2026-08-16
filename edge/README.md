@@ -17,7 +17,7 @@ Endpoint locali:
 
 Il client deve inviare `Authorization: Bearer <TOKEN>`. Il secret tecnico `AI_API_TOKEN` è limitato alla lettura; i token editor sono salvati in `auth_tokens` soltanto come hash SHA-256 e richiedono gli scope `content:read content:write`.
 
-La versione applicativa è `0.2.1`, condivisa dall'handshake MCP e dalla risposta `/health`. Le dipendenze dirette sono fissate a versioni esatte nel manifest e nel lockfile per ottenere build riproducibili.
+La versione applicativa è `0.2.2`, condivisa dall'handshake MCP e dalla risposta `/health`. Le dipendenze dirette sono fissate a versioni esatte nel manifest e nel lockfile per ottenere build riproducibili.
 
 ## Staging Cloudflare
 
@@ -36,7 +36,7 @@ Lo staging è stato pubblicato e verificato il 15 agosto 2026 con Worker `0.2.0`
 - health: `https://lisacroce.it/health`
 - MCP Streamable HTTP: `https://lisacroce.it/mcp`
 
-La produzione è stata pubblicata e verificata il 16 agosto 2026 con Worker `0.2.1` (versione Cloudflare `a589f0e4-caca-42ff-81b4-185fa7c2a9b2`). La homepage viene renderizzata da D1, `www` reindirizza al dominio canonico, `/preview` invia `X-Robots-Tag: noindex, nofollow`, gli asset rispondono `200` e l'accesso MCP anonimo restituisce `401`.
+La produzione è stata pubblicata e verificata il 16 agosto 2026 con Worker `0.2.2` (versione Cloudflare `fcaa6611-8bde-4c08-a568-9a0e7fb16d2d`). La homepage viene renderizzata da D1, espone titolo, descrizione, canonical, metadati social e favicon coerenti, `www` reindirizza al dominio canonico, `/preview` invia `X-Robots-Tag: noindex, nofollow`, gli asset rispondono `200` e l'accesso MCP anonimo restituisce `401`.
 
 `AI_API_TOKEN` è configurato come secret Cloudflare. I token editor usati negli smoke test sono stati generati solo in memoria, memorizzati in D1 come hash e rimossi al termine. Prima di configurare un client stabile, creare un token editor dedicato e custodirne il valore nel gestore segreti scelto.
 

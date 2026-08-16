@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
 import { z } from "zod";
+import favicon from "../../favicon.svg";
 import siteTemplate from "../../index.html";
 import contactImage from "../../images/contact-conversation-evanescent.jpg";
 import heroImage from "../../images/hero.jpeg";
@@ -194,6 +195,7 @@ function jsonError(status, message) {
 }
 
 const IMAGE_ASSETS = new Map([
+  ["/favicon.svg", { body: favicon, contentType: "image/svg+xml; charset=utf-8" }],
   ["/images/hero.jpeg", { body: heroImage, contentType: "image/jpeg" }],
   ["/images/contact-conversation-evanescent.jpg", { body: contactImage, contentType: "image/jpeg" }]
 ]);
