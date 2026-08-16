@@ -13,11 +13,15 @@ test("la configurazione pubblica dominio principale e www", async () => {
   ]);
 });
 
-test("la produzione espone root indicizzabile e mantiene la preview noindex", async () => {
+test("la produzione usa www come host canonico e mantiene la preview noindex", async () => {
   const source = await readFile(new URL("../src/server.mjs", import.meta.url), "utf8");
 
+  assert.match(source, /hostname === "www\.lisacroce\.it"/);
+  assert.match(source, /hostname === "lisacroce\.it" \|\| hostname === "www\.lisacroce\.it"/);
+  assert.match(source, /target\.hostname = "www\.lisacroce\.it"/);
+  assert.match(source, /url\.protocol !== "https:"/);
   assert.match(source, /productionHost && url\.pathname === "\/"/);
   assert.match(source, /pageResponse\(request, env, \{ indexable: true \}\)/);
   assert.match(source, /pageResponse\(request, env, \{ indexable: false \}\)/);
-  assert.match(source, /hostname === "www\.lisacroce\.it"/);
+  assert.match(source, /secureResponse\(await routeRequest/);
 });

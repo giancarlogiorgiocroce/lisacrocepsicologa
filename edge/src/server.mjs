@@ -10,6 +10,7 @@ import { getPage } from "./content.mjs";
 import { SECTION_PRESETS } from "./contracts.mjs";
 import { listChanges, MutationError, rollbackChange, updateText } from "./mutations.mjs";
 import { renderPageDocument } from "./rendering.mjs";
+import { applyCspNonce, contentSecurityPolicy, createCspNonce, secureResponse } from "./security.mjs";
 import { APP_VERSION } from "./version.mjs";
 
 function textResult(payload) {
@@ -210,13 +211,17 @@ function imageResponse(request, asset) {
 }
 
 function isProductionHost(hostname) {
-  return hostname === "lisacroce.it";
+  return hostname === "www.lisacroce.it";
+}
+
+function isPublicHost(hostname) {
+  return hostname === "lisacroce.it" || hostname === "www.lisacroce.it";
 }
 
 function canonicalRedirect(url) {
   const target = new URL(url);
   target.protocol = "https:";
-  target.hostname = "lisacroce.it";
+  target.hostname = "www.lisacroce.it";
   target.port = "";
   return Response.redirect(target, 308);
 }
@@ -225,86 +230,93 @@ async function pageResponse(request, env, { indexable }) {
   const page = await getPage(env.DB, "lisa", "home");
   if (!page) return jsonError(404, "Pagina non disponibile");
 
-  const html = renderPageDocument(page, siteTemplate);
+  const nonce = createCspNonce();
+  const html = applyCspNonce(renderPageDocument(page, siteTemplate), nonce);
   const headers = new Headers({
     "Content-Type": "text/html; charset=utf-8",
-    "Cache-Control": "no-store"
+    "Cache-Control": "no-store",
+    "Content-Security-Policy": contentSecurityPolicy(nonce)
   });
   if (!indexable) headers.set("X-Robots-Tag", "noindex, nofollow");
 
   return new Response(request.method === "HEAD" ? null : html, { headers });
 }
 
+async function routeRequest(request, env, ctx, url) {
+  const productionHost = isProductionHost(url.hostname);
+
+  if (isPublicHost(url.hostname) && (url.protocol !== "https:" || !productionHost)) {
+    return canonicalRedirect(url);
+  }
+
+  if (url.pathname === "/health") {
+    return Response.json({
+      ok: true,
+      service: "lisacroce-ai-cms",
+      version: APP_VERSION,
+      environment: productionHost ? "production" : "staging",
+      transport: "streamable-http",
+      dnsRequired: false
+    });
+  }
+
+  if (productionHost && url.pathname === "/index.html") {
+    return Response.redirect(new URL("/", url), 301);
+  }
+
+  if (productionHost && url.pathname === "/robots.txt") {
+    return new Response("User-agent: *\nAllow: /\nSitemap: https://www.lisacroce.it/sitemap.xml\n", {
+      headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" }
+    });
+  }
+
+  if (productionHost && url.pathname === "/sitemap.xml") {
+    return new Response('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://www.lisacroce.it/</loc></url></urlset>\n', {
+      headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" }
+    });
+  }
+
+  if (productionHost && url.pathname === "/" && (request.method === "GET" || request.method === "HEAD")) {
+    return pageResponse(request, env, { indexable: true });
+  }
+
+  if (url.pathname === "/preview/") {
+    return Response.redirect(new URL("/preview", url), 301);
+  }
+
+  if (url.pathname === "/preview" && (request.method === "GET" || request.method === "HEAD")) {
+    return pageResponse(request, env, { indexable: false });
+  }
+
+  const imageAsset = IMAGE_ASSETS.get(url.pathname);
+  if (imageAsset && (request.method === "GET" || request.method === "HEAD")) {
+    return imageResponse(request, imageAsset);
+  }
+
+  if (url.pathname !== "/mcp") {
+    return jsonError(404, "Not found");
+  }
+
+  const auth = await authorizeMcpRequest(request, env);
+  if (!auth.ok) {
+    return jsonError(auth.status, auth.message);
+  }
+
+  const handler = createMcpHandler(() => createServer(env, auth), {
+    route: "/mcp",
+    responseMode: "auto",
+    legacy: "stateless"
+  });
+
+  return await handler(request, env, ctx);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
-    const productionHost = isProductionHost(url.hostname);
 
     try {
-      if (url.hostname === "www.lisacroce.it") {
-        return canonicalRedirect(url);
-      }
-
-      if (url.pathname === "/health") {
-        return Response.json({
-          ok: true,
-          service: "lisacroce-ai-cms",
-          version: APP_VERSION,
-          environment: productionHost ? "production" : "staging",
-          transport: "streamable-http",
-          dnsRequired: false
-        });
-      }
-
-      if (productionHost && url.pathname === "/index.html") {
-        return Response.redirect(new URL("/", url), 301);
-      }
-
-      if (productionHost && url.pathname === "/robots.txt") {
-        return new Response("User-agent: *\nAllow: /\nSitemap: https://lisacroce.it/sitemap.xml\n", {
-          headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "public, max-age=3600" }
-        });
-      }
-
-      if (productionHost && url.pathname === "/sitemap.xml") {
-        return new Response('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://lisacroce.it/</loc></url></urlset>\n', {
-          headers: { "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" }
-        });
-      }
-
-      if (productionHost && url.pathname === "/" && (request.method === "GET" || request.method === "HEAD")) {
-        return pageResponse(request, env, { indexable: true });
-      }
-
-      if (url.pathname === "/preview/") {
-        return Response.redirect(new URL("/preview", url), 301);
-      }
-
-      if (url.pathname === "/preview" && (request.method === "GET" || request.method === "HEAD")) {
-        return pageResponse(request, env, { indexable: false });
-      }
-
-      const imageAsset = IMAGE_ASSETS.get(url.pathname);
-      if (imageAsset && (request.method === "GET" || request.method === "HEAD")) {
-        return imageResponse(request, imageAsset);
-      }
-
-      if (url.pathname !== "/mcp") {
-        return jsonError(404, "Not found");
-      }
-
-      const auth = await authorizeMcpRequest(request, env);
-      if (!auth.ok) {
-        return jsonError(auth.status, auth.message);
-      }
-
-      const handler = createMcpHandler(() => createServer(env, auth), {
-        route: "/mcp",
-        responseMode: "auto",
-        legacy: "stateless"
-      });
-
-      return await handler(request, env, ctx);
+      return secureResponse(await routeRequest(request, env, ctx, url));
     } catch (error) {
       console.error(JSON.stringify({
         event: "request_failed",
@@ -312,7 +324,7 @@ export default {
         method: request.method,
         error: error instanceof Error ? error.message : "Unknown error"
       }));
-      return jsonError(500, "Internal server error");
+      return secureResponse(jsonError(500, "Internal server error"));
     }
   }
 };

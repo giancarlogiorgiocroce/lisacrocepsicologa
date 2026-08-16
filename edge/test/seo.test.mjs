@@ -11,11 +11,11 @@ test("la homepage espone metadati SEO e social coerenti", async () => {
 
   assert.ok(html.includes(`<title>${title}</title>`));
   assert.ok(html.includes(`<meta name="description" content="${description}"`));
-  assert.match(html, /<link rel="canonical" href="https:\/\/lisacroce\.it\/"/);
+  assert.match(html, /<link rel="canonical" href="https:\/\/www\.lisacroce\.it\/"/);
   assert.match(html, /<link rel="icon" href="\/favicon\.svg" type="image\/svg\+xml" sizes="any"/);
   assert.match(html, /<meta property="og:title"/);
   assert.match(html, /<meta property="og:description"/);
-  assert.match(html, /<meta property="og:url" content="https:\/\/lisacroce\.it\/"/);
+  assert.match(html, /<meta property="og:url" content="https:\/\/www\.lisacroce\.it\/"/);
 });
 
 test("favicon e titolo dinamico vengono inclusi nel Worker", async () => {

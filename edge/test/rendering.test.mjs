@@ -90,7 +90,7 @@ test("il renderer fa escaping di testo e attributi", () => {
 test("il documento conserva shell, CSS e script ma sostituisce il main con D1", async () => {
   const template = await readFile(new URL("../../index.html", import.meta.url), "utf8");
   const html = renderPageDocument(pageModel, template);
-  assert.match(html, /<style>/);
+  assert.match(html, /<style nonce="__CSP_NONCE__">/);
   assert.match(html, /<footer>/);
   assert.match(html, /<main id="top" data-content-source="d1">/);
   assert.match(html, /Dare forma/);
